@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Back Office</title>
+</head>
+<body>
+  <h1>Back Office</h1>
+  <p><a href="/gallery">View Gallery</a> | <a href="/logout">Logout</a></p>
+  
+  <h2>Upload Photo</h2>
+  <form action="/upload-photo" method="post" enctype="multipart/form-data">
+    <input type="file" name="photo" accept="image/*" required>
+    <button type="submit">Upload</button>
+  </form>
+
+  <h2>Manage Authorized Users</h2>
+  <h3>Add User</h3>
+  <form action="/add-user" method="post">
+    <input type="email" name="email" placeholder="Email" required>
+    <button type="submit">Add</button>
+  </form>
+  
+  <h3>Remove User</h3>
+  <form action="/remove-user" method="post">
+    <input type="email" name="email" placeholder="Email" required>
+    <button type="submit">Remove</button>
+  </form>
+
+  <h2>Authorized Users List</h2>
+  <div id="user-list"></div>
+
+  <script>
+    // Fetch and display authorized users list
+    fetch('/api/users')
+      .then(response => response.json())
+      .then(data => {
+        const listDiv = document.getElementById('user-list');
+        if (data.emails.length === 0) {
+          listDiv.textContent = 'No authorized users yet.';
+        } else {
+          const ul = document.createElement('ul');
+          data.emails.forEach(email => {
+            const li = document.createElement('li');
+            li.textContent = email;
+            ul.appendChild(li);
+          });
+          listDiv.appendChild(ul);
+        }
+      });
+  </script>
+</body>
+</html>
