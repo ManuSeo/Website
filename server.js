@@ -8,6 +8,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 app.use(express.static('public'));
 
 // Session setup
@@ -69,7 +70,8 @@ function savePhotos(photos) {
 function isAuthenticated(req, res, next) {
   if (req.session && req.session.email) {
     const users = loadUsers();
-    if (users.emails.includes(req.session.email)) {
+    const normalizedSessionEmail = req.session.email.trim().toLowerCase();
+    if (users.emails.map(email => email.trim().toLowerCase()).includes(normalizedSessionEmail)) {
       return next();
     }
   }
@@ -84,10 +86,14 @@ app.get('/login', (req, res) => {
 
 // Login processing
 app.post('/login', (req, res) => {
-  const { email } = req.body;
+  if (!req.body.email) return res.send('Email is required. <a href="/login">Try again</a>');
+
+  const submittedEmail = req.body.email.trim().toLowerCase();
   const users = loadUsers();
-  if (users.emails.includes(email)) {
-    req.session.email = email;
+  const normalizedUsers = users.emails.map(email => email.trim().toLowerCase());
+
+  if (normalizedUsers.includes(submittedEmail)) {
+    req.session.email = submittedEmail;
     res.redirect('/backoffice');
   } else {
     res.send('Unauthorized email. <a href="/login">Try again</a>');
@@ -118,35 +124,41 @@ app.post('/upload-photo', isAuthenticated, upload.single('photo'), (req, res) =>
 
 // Manage authorized users
 app.post('/add-user', isAuthenticated, (req, res) => {
-  const { email } = req.body;
-  if (!email) return res.send('Email is required');
+  if (!req.body.email) return res.send('Email is required');
+  const newEmail = req.body.email.trim().toLowerCase();
   const users = loadUsers();
-  if (!users.emails.includes(email)) {
-    users.emails.push(email);
+  const normalizedUsers = users.emails.map(email => email.trim().toLowerCase());
+  if (!normalizedUsers.includes(newEmail)) {
+    users.emails.push(newEmail);
     saveUsers(users);
   }
   res.redirect('/backoffice');
 });
 
 app.post('/remove-user', isAuthenticated, (req, res) => {
-  const { email } = req.body;
-  if (!email) return res.send('Email is required');
+  if (!req.body.email) return res.send('Email is required');
+  const removeEmail = req.body.email.trim().toLowerCase();
   const users = loadUsers();
-  users.emails = users.emails.filter(e => e !== email);
+  users.emails = users.emails.filter(email => email.trim().toLowerCase() !== removeEmail);
   saveUsers(users);
   res.redirect('/backoffice');
 });
 
+// API to get users list as JSON
+app.get('/api/users', isAuthenticated, (req, res) => {
+  const users = loadUsers();
+  res.json(users);
+});
+
 // Gallery page - accessible only to authorized users
 app.get('/gallery', isAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'gallery.html'));
+});
+
+// API to get photos list as JSON
+app.get('/api/photos', isAuthenticated, (req, res) => {
   const photos = loadPhotos();
-  let photoImgs = photos.photos.map(p => `<img src="/uploads/${p.filename}" style="max-width:300px;margin:10px;" />`).join('\n');
-  const html = `
-  <h1>Photo Gallery</h1>
-  <p><a href="/logout">Logout</a></p>
-  <div>${photoImgs}</div>
-  `;
-  res.send(html);
+  res.json(photos);
 });
 
 // Home redirect to login (or gallery if logged in)
