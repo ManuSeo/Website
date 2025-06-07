@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Gallery</title>
+</head>
+<body>
+  <h1>Photo Gallery</h1>
+  <p><a href="/backoffice">Back Office</a> | <a href="/logout">Logout</a></p>
+  <div id="gallery"></div>
+
+  <script>
+    fetch('/api/photos')
+      .then(response => response.json())
+      .then(data => {
+        const galleryDiv = document.getElementById('gallery');
+        if (data.photos.length === 0) {
+          galleryDiv.textContent = 'No photos uploaded yet.';
+        } else {
+          data.photos.forEach(photo => {
+            const img = document.createElement('img');
+            img.src = '/uploads/' + photo.filename;
+            img.style.maxWidth = '300px';
+            img.style.margin = '10px';
+            galleryDiv.appendChild(img);
+          });
+        }
+      });
+  </script>
+</body>
+</html>
