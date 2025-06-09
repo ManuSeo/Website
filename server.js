@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const session = require('express-session');
+const multer = require('multer');
 
 const app = express();
 
@@ -13,6 +14,31 @@ app.use(session({
   saveUninitialized: false
 }));
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
+
+// Multer setup for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, path.join(__dirname, 'public/uploads'));
+  },
+  filename: (req, file, cb) => {
+    // Keep original filename
+    cb(null, file.originalname);
+  }
+});
+const upload = multer({
+  storage: storage,
+  fileFilter: (req, file, cb) => {
+    // Accept JPEG only
+    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/jpg') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only JPEG images are allowed'));
+    }
+  },
+  limits: {
+    fileSize: 5 * 1024 * 1024 // Limit 5MB
+  }
+});
 
 // Authentication middleware
 function requireLogin(req, res, next) {
@@ -74,6 +100,38 @@ app.get('/api/photos', (req, res) => {
       return;
     }
     res.json(JSON.parse(data));
+  });
+});
+
+// New photo upload route
+app.post('/upload-photo', requireLogin, upload.single('photo'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).send('No file uploaded or invalid file type. Only JPEG images are allowed.');
+  }
+  // Add file info to photos.json
+  const photoEntry = {
+    filename: req.file.originalname,
+    url: `/uploads/${req.file.filename}`
+  };
+
+  const photosPath = path.join(__dirname, 'data/photos.json');
+  fs.readFile(photosPath, 'utf8', (err, data) => {
+    if (err) {
+      return res.status(500).send('Error saving photo data');
+    }
+    let photos = [];
+    try {
+      photos = JSON.parse(data);
+    } catch (e) {
+      photos = [];
+    }
+    photos.push(photoEntry);
+    fs.writeFile(photosPath, JSON.stringify(photos, null, 2), 'utf8', (err) => {
+      if (err) {
+        return res.status(500).send('Error saving photo data');
+      }
+      res.redirect('/backoffice');
+    });
   });
 });
 
