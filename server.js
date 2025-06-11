@@ -92,6 +92,11 @@ app.get('/backoffice', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'backoffice.html'));
 });
 
+// New photos page
+app.get('/photos', requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'photos.html'));
+});
+
 // API
 app.get('/api/photos', (req, res) => {
   fs.readFile(path.join(__dirname, 'data/photos.json'), 'utf8', (err, data) => {
@@ -119,14 +124,14 @@ app.post('/upload-photo', requireLogin, upload.single('photo'), (req, res) => {
     if (err) {
       return res.status(500).send('Error saving photo data');
     }
-    let photos = [];
+    let photosObj = { photos: [] };
     try {
-      photos = JSON.parse(data);
+      photosObj = JSON.parse(data);
     } catch (e) {
-      photos = [];
+      photosObj = { photos: [] };
     }
-    photos.push(photoEntry);
-    fs.writeFile(photosPath, JSON.stringify(photos, null, 2), 'utf8', (err) => {
+    photosObj.photos.push(photoEntry);
+    fs.writeFile(photosPath, JSON.stringify(photosObj, null, 2), 'utf8', (err) => {
       if (err) {
         return res.status(500).send('Error saving photo data');
       }
