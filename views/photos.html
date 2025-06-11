@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Photo Gallery</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f4f4f4;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    .photo-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+      padding: 10px;
+    }
+    .photo-item {
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      width: 200px;
+      padding: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .photo-item img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .download-link {
+      display: block;
+      margin-top: 10px;
+      padding: 5px 10px;
+      background-color: #4CAF50;
+      color: white;
+      text-decoration: none;
+      border-radius: 3px;
+    }
+    .download-link:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+<body>
+  <h1>Downloadable Photos</h1>
+  <div class="photo-container" id="photoContainer">
+    <!-- Photos will be dynamically loaded here -->
+  </div>
+
+  <script>
+    async function loadPhotos() {
+      try {
+        const response = await fetch('/api/photos');
+        if (!response.ok) {
+          throw new Error('Failed to fetch photos');
+        }
+        const data = await response.json();
+        const photoContainer = document.getElementById('photoContainer');
+        if (data.photos.length === 0) {
+          photoContainer.innerHTML = '<p>No photos available.</p>';
+          return;
+        }
+        photoContainer.innerHTML = '';
+        data.photos.forEach(photo => {
+          const div = document.createElement('div');
+          div.className = 'photo-item';
+
+          const img = document.createElement('img');
+          img.src = photo.url;
+          img.alt = photo.filename;
+          img.title = photo.filename;
+
+          const link = document.createElement('a');
+          link.href = photo.url;
+          link.download = photo.filename;
+          link.className = 'download-link';
+          link.textContent = 'Download';
+
+          div.appendChild(img);
+          div.appendChild(link);
+          photoContainer.appendChild(div);
+        });
+      } catch (err) {
+        document.getElementById('photoContainer').innerHTML = '<p>Error loading photos.</p>';
+        console.error(err);
+      }
+    }
+
+    window.onload = loadPhotos;
+  </script>
+</body>
+</html>
