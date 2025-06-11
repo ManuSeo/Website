@@ -97,9 +97,13 @@ app.get('/photos', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'photos.html'));
 });
 
-// Slideshow page
+// Slideshow pages
 app.get('/slideshow', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'slideshow.html'));
+});
+
+app.get('/slideshow2', requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'slideshow2.html'));
 });
 
 // API
