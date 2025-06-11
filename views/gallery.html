@@ -8,6 +8,7 @@
       font-family: Arial, sans-serif;
       margin: 20px;
       text-align: center;
+      background-color: #87CEEB;
     }
     #gallery {
       display: grid;
@@ -52,8 +53,8 @@
         } else {
           data.photos.forEach(photo => {
             const img = document.createElement('img');
-            img.src = '/uploads/' + photo.filename;
-            img.alt = photo.description || 'Photo';
+            img.src = photo.url;
+            img.alt = photo.filename || 'Photo';
             galleryDiv.appendChild(img);
           });
         }
