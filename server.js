@@ -97,7 +97,7 @@ app.get('/photos', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'photos.html'));
 });
 
-// New slideshow page
+// Slideshow page
 app.get('/slideshow', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'slideshow.html'));
 });
