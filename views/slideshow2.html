@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Photo Slideshow Enhanced</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 40px;
+      text-align: center;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+    .slideshow-container {
+      max-width: 700px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      position: relative;
+    }
+    img#mainSlide {
+      max-width: 100%;
+      border-radius: 8px;
+      height: auto;
+    }
+    .caption {
+      margin-top: 10px;
+      font-weight: bold;
+      color: #555;
+    }
+    .nav-buttons {
+      margin-top: 15px;
+    }
+    button {
+      background-color: #4CAF50;
+      border: none;
+      color: white;
+      padding: 10px 15px;
+      margin: 0 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    .thumbnail-container {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .thumbnail {
+      width: 80px;
+      height: 60px;
+      object-fit: cover;
+      border: 2px solid transparent;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: border-color 0.3s ease;
+    }
+    .thumbnail.active {
+      border-color: #4CAF50;
+    }
+  </style>
+</head>
+<body>
+  <h1>Enhanced Photo Slideshow</h1>
+  <div class="slideshow-container">
+    <img id="mainSlide" src="" alt="Photo" />
+    <div class="caption" id="caption"></div>
+    <div class="nav-buttons">
+      <button id="prevBtn">Previous</button>
+      <button id="nextBtn">Next</button>
+    </div>
+    <div class="thumbnail-container" id="thumbnailContainer">
+      <!-- Thumbnails will be generated here -->
+    </div>
+  </div>
+
+  <script>
+    let photos = [];
+    let currentIndex = 0;
+    let autoplayInterval = null;
+
+    const mainSlide = document.getElementById('mainSlide');
+    const caption = document.getElementById('caption');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const thumbnailContainer = document.getElementById('thumbnailContainer');
+
+    async function loadPhotos() {
+      try {
+        const response = await fetch('/api/photos');
+        if (!response.ok) throw new Error('Failed to fetch photos');
+        const data = await response.json();
+        photos = data.photos;
+        if (photos.length === 0) {
+          caption.textContent = 'No photos to show';
+          mainSlide.style.display = 'none';
+          prevBtn.disabled = true;
+          nextBtn.disabled = true;
+          return;
+        }
+        generateThumbnails();
+        showSlide(currentIndex);
+        startAutoplay();
+      } catch (error) {
+        caption.textContent = 'Error loading photos.';
+        console.error(error);
+      }
+    }
+
+    function showSlide(index) {
+      if (index < 0) index = photos.length - 1;
+      else if (index >= photos.length) index = 0;
+      currentIndex = index;
+      mainSlide.src = photos[currentIndex].url;
+      mainSlide.alt = photos[currentIndex].filename;
+      caption.textContent = photos[currentIndex].filename;
+      updateActiveThumbnail();
+    }
+
+    function generateThumbnails() {
+      thumbnailContainer.innerHTML = '';
+      photos.forEach((photo, index) => {
+        const thumb = document.createElement('img');
+        thumb.src = photo.url;
+        thumb.alt = photo.filename;
+        thumb.className = 'thumbnail';
+        thumb.addEventListener('click', () => {
+          stopAutoplay();
+          showSlide(index);
+          startAutoplay();
+        });
+        thumbnailContainer.appendChild(thumb);
+      });
+      updateActiveThumbnail();
+    }
+
+    function updateActiveThumbnail() {
+      const thumbs = thumbnailContainer.querySelectorAll('.thumbnail');
+      thumbs.forEach((thumb, idx) => {
+        if (idx === currentIndex) {
+          thumb.classList.add('active');
+        } else {
+          thumb.classList.remove('active');
+        }
+      });
+    }
+
+    prevBtn.addEventListener('click', () => {
+      stopAutoplay();
+      showSlide(currentIndex - 1);
+      startAutoplay();
+    });
+
+    nextBtn.addEventListener('click', () => {
+      stopAutoplay();
+      showSlide(currentIndex + 1);
+      startAutoplay();
+    });
+
+    function startAutoplay() {
+      if (autoplayInterval) clearInterval(autoplayInterval);
+      autoplayInterval = setInterval(() => {
+        showSlide(currentIndex + 1);
+      }, 4000);
+    }
+
+    function stopAutoplay() {
+      if (autoplayInterval) {
+        clearInterval(autoplayInterval);
+        autoplayInterval = null;
+      }
+    }
+
+    window.onload = loadPhotos;
+  </script>
+</body>
+</html>
