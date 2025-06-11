@@ -97,6 +97,11 @@ app.get('/photos', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'photos.html'));
 });
 
+// New slideshow page
+app.get('/slideshow', requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'slideshow.html'));
+});
+
 // API
 app.get('/api/photos', (req, res) => {
   fs.readFile(path.join(__dirname, 'data/photos.json'), 'utf8', (err, data) => {
