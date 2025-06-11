@@ -22,7 +22,7 @@
     form {
       margin-bottom: 15px;
     }
-    input[type="file"], input[type="email"] {
+    input[type="file"], input[type="email"], select {
       padding: 8px;
       margin-right: 10px;
       border-radius: 4px;
@@ -39,11 +39,11 @@
     button:hover {
       background-color: #45a049;
     }
-    #user-list ul {
+    #user-list ul, #photo-list ul {
       list-style-type: none;
       padding-left: 0;
     }
-    #user-list li {
+    #user-list li, #photo-list li {
       padding: 4px 0;
     }
   </style>
@@ -56,6 +56,14 @@
   <form action="/upload-photo" method="post" enctype="multipart/form-data">
     <input type="file" name="photo" accept="image/*" required>
     <button type="submit">Upload</button>
+  </form>
+
+  <h2>Remove Photo</h2>
+  <form id="remove-photo-form" action="/remove-photo" method="post">
+    <select name="filename" id="photo-select" required>
+      <option value="">Select a photo to remove</option>
+    </select>
+    <button type="submit">Remove</button>
   </form>
 
   <h2>Manage Authorized Users</h2>
@@ -90,6 +98,28 @@
             ul.appendChild(li);
           });
           listDiv.appendChild(ul);
+        }
+      });
+
+    // Fetch and populate photo removal dropdown
+    fetch('/api/photos')
+      .then(response => response.json())
+      .then(data => {
+        const select = document.getElementById('photo-select');
+        if (data.photos.length === 0) {
+          const option = document.createElement('option');
+          option.value = '';
+          option.textContent = 'No photos available';
+          select.appendChild(option);
+          select.disabled = true;
+        } else {
+          data.photos.forEach(photo => {
+            const option = document.createElement('option');
+            option.value = photo.filename;
+            option.textContent = photo.filename;
+            select.appendChild(option);
+          });
+          select.disabled = false;
         }
       });
   </script>
