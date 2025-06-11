@@ -149,6 +149,50 @@ app.post('/upload-photo', requireLogin, upload.single('photo'), (req, res) => {
   });
 });
 
+// New photo removal route
+app.post('/remove-photo', requireLogin, (req, res) => {
+  const filename = req.body.filename;
+  if (!filename) {
+    return res.status(400).send('No filename provided');
+  }
+
+  const photosPath = path.join(__dirname, 'data/photos.json');
+  fs.readFile(photosPath, 'utf8', (err, data) => {
+    if (err) {
+      return res.status(500).send('Error reading photo data');
+    }
+    let photosObj = { photos: [] };
+    try {
+      photosObj = JSON.parse(data);
+    } catch (e) {
+      photosObj = { photos: [] };
+    }
+
+    const photoIndex = photosObj.photos.findIndex(p => p.filename === filename);
+    if (photoIndex === -1) {
+      return res.status(404).send('Photo not found');
+    }
+
+    // Remove photo from array
+    photosObj.photos.splice(photoIndex, 1);
+
+    // Delete photo file
+    const photoFilePath = path.join(__dirname, 'public/uploads', filename);
+    fs.unlink(photoFilePath, (unlinkErr) => {
+      if (unlinkErr) {
+        console.error('Error deleting file:', unlinkErr);
+      }
+      // Write updated photo list
+      fs.writeFile(photosPath, JSON.stringify(photosObj, null, 2), 'utf8', (writeErr) => {
+        if (writeErr) {
+          return res.status(500).send('Error saving photo data');
+        }
+        res.redirect('/backoffice');
+      });
+    });
+  });
+});
+
 // Server listens on port 3000
 const PORT = 3000;
 app.listen(PORT, () => {
