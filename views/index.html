@@ -83,6 +83,24 @@
   #scrollRight {
     right: -50px;
   }
+  #uploadForm {
+    margin: 20px auto;
+    width: 80%;
+    text-align: center;
+  }
+  #uploadInput {
+    margin-right: 10px;
+  }
+  #uploadButton {
+    padding: 6px 12px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  #uploadStatus {
+    margin-top: 10px;
+    font-style: italic;
+    color: green;
+  }
 </style>
 </head>
 <body>
@@ -96,6 +114,13 @@
   </p>
 
   <h2>Public Photo Gallery</h2>
+
+  <form id="uploadForm">
+    <input type="file" id="uploadInput" name="photos" multiple accept="image/*" />
+    <button type="submit" id="uploadButton">Upload Photos</button>
+    <div id="uploadStatus"></div>
+  </form>
+
   <div class="scroller-container">
     <button id="scrollLeft" class="scroll-btn" aria-label="Scroll Left">&#9664;</button>
     <div class="scroller" id="photoScroller">
@@ -142,6 +167,39 @@
         console.error(err);
       }
     }
+
+    async function uploadPhotos(files) {
+      const statusDiv = document.getElementById('uploadStatus');
+      statusDiv.textContent = 'Uploading...';
+      const formData = new FormData();
+      for (const file of files) {
+        formData.append('photos', file);
+      }
+      try {
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+        if (!response.ok) {
+          throw new Error('Upload failed');
+        }
+        statusDiv.textContent = 'Upload successful!';
+        loadPhotos();
+      } catch (err) {
+        statusDiv.textContent = 'Upload failed. Try again.';
+        console.error(err);
+      }
+    }
+
+    document.getElementById('uploadForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const files = document.getElementById('uploadInput').files;
+      if (files.length === 0) {
+        alert('Please select at least one photo to upload.');
+        return;
+      }
+      uploadPhotos(files);
+    });
 
     function scrollScroller(amount) {
       const scroller = document.getElementById('photoScroller');
