@@ -5,124 +5,99 @@
 <title>Caro & Manu</title>
 <style>
   body {
-    font-family: Arial, sans-serif;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background-color: #f5f5f5;
+    margin: 20px;
+    color: #222;
     text-align: center;
-    margin: 40px;
-  }
-  #wordmap {
-    width: 600px;
-    height: 400px;
-    margin: 0 auto 20px;
-    background: url('https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/Wordcloud.png/600px-Wordcloud.png') no-repeat center center;
-    background-size: contain;
   }
   a {
-    margin: 0 10px;
-  }
-  .scroller-container {
-    position: relative;
-    width: 80%;
-    margin: 30px auto;
-  }
-  .scroller {
-    overflow-x: auto;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    scroll-behavior: smooth;
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-  }
-  .photo-item {
-    flex: 0 0 auto;
-    background: white;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    width: 200px;
-    padding: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    text-align: center;
-    vertical-align: top;
-  }
-  .photo-item img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 3px;
-  }
-  .download-link {
-    display: block;
-    margin-top: 10px;
-    padding: 5px 10px;
-    background-color: #4CAF50;
-    color: white;
+    color: #0073e6;
     text-decoration: none;
-    border-radius: 3px;
   }
-  .download-link:hover {
-    background-color: #45a049;
-  }
-  .scroll-btn {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    background-color: rgba(0,0,0,0.5);
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    cursor: pointer;
-    border-radius: 3px;
-    z-index: 10;
-    user-select: none;
-  }
-  .scroll-btn:hover {
-    background-color: rgba(0,0,0,0.7);
-  }
-  #scrollLeft {
-    left: -50px;
-  }
-  #scrollRight {
-    right: -50px;
-  }
-  #uploadForm {
-    margin: 20px auto;
-    width: 80%;
-    text-align: center;
-  }
-  #uploadInput {
-    margin-right: 10px;
-  }
-  #uploadButton {
-    padding: 6px 12px;
-    font-size: 14px;
-    cursor: pointer;
-  }
-  #uploadStatus {
-    margin-top: 10px;
-    font-style: italic;
-    color: green;
+  a:hover {
+    text-decoration: underline;
   }
   #caroManuBox {
     margin: 20px auto;
     padding: 15px;
-    border: 2px solid #4CAF50;
+    border: 2px solid #0073e6;
     border-radius: 8px;
-    width: 300px;
-    font-size: 20px;
-    font-weight: bold;
-    color: #4CAF50;
+    max-width: 600px;
+    font-size: 24px;
+    font-weight: 600;
+    color: #0073e6;
+  }
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 15px;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 10px;
+  }
+  .photo-item {
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+    transition: box-shadow 0.3s ease;
+  }
+  .photo-item:hover {
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+  }
+  .photo-item img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .photo-details {
+    padding: 8px 10px;
+    font-size: 14px;
+    color: #555;
+    text-align: left;
+  }
+  .download-link {
+    display: inline-block;
+    margin-top: 5px;
+    padding: 6px 12px;
+    background-color: #0073e6;
+    color: white;
+    border-radius: 3px;
+    font-size: 14px;
+  }
+  .download-link:hover {
+    background-color: #005bb5;
+  }
+  #uploadForm {
+    max-width: 600px;
+    margin: 20px auto;
+    text-align: center;
+  }
+  #uploadInput {
+    margin-right: 10px;
+    padding: 6px;
+    font-size: 14px;
+  }
+  #uploadButton {
+    padding: 7px 15px;
+    font-size: 14px;
+    cursor: pointer;
+    background-color: #0073e6;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+  }
+  #uploadButton:hover {
+    background-color: #005bb5;
   }
 </style>
 </head>
 <body>
   <h1>Welcome to the Photo Gallery Website</h1>
-  <div id="wordmap"></div>
-  <p>This is a public welcome page visible to everyone.</p>
-  <p>
-    <a href="/login">Login</a> | 
-    <a href="/gallery">View Gallery (login required)</a> | 
-    <a href="/backoffice">Back Office (login required)</a>
-  </p>
 
   <div id="caroManuBox"></div>
 
@@ -134,12 +109,8 @@
     <div id="uploadStatus"></div>
   </form>
 
-  <div class="scroller-container">
-    <button id="scrollLeft" class="scroll-btn" aria-label="Scroll Left">&#9664;</button>
-    <div class="scroller" id="photoScroller">
-      <!-- Photos will be dynamically loaded here -->
-    </div>
-    <button id="scrollRight" class="scroll-btn" aria-label="Scroll Right">&#9654;</button>
+  <div class="gallery" id="photoScroller">
+    <!-- Photos will be dynamically loaded here as grid -->
   </div>
 
   <script>
@@ -165,11 +136,11 @@
         }
         const data = await response.json();
         const photoScroller = document.getElementById('photoScroller');
+        photoScroller.innerHTML = '';
         if (data.photos.length === 0) {
           photoScroller.innerHTML = '<p>No photos available.</p>';
           return;
         }
-        photoScroller.innerHTML = '';
         data.photos.forEach(photo => {
           const div = document.createElement('div');
           div.className = 'photo-item';
@@ -179,18 +150,25 @@
           img.alt = photo.filename;
           img.title = photo.filename;
 
+          const details = document.createElement('div');
+          details.className = 'photo-details';
+          details.textContent = photo.filename;
+
           const link = document.createElement('a');
           link.href = photo.url;
           link.download = photo.filename;
           link.className = 'download-link';
           link.textContent = 'Download';
 
+          details.appendChild(link);
           div.appendChild(img);
-          div.appendChild(link);
+          div.appendChild(details);
+
           photoScroller.appendChild(div);
         });
       } catch (err) {
-        document.getElementById('photoScroller').innerHTML = '<p>Error loading photos.</p>';
+        const photoScroller = document.getElementById('photoScroller');
+        photoScroller.innerHTML = '<p>Error loading photos.</p>';
         console.error(err);
       }
     }
@@ -227,14 +205,6 @@
       }
       uploadPhotos(files);
     });
-
-    function scrollScroller(amount) {
-      const scroller = document.getElementById('photoScroller');
-      scroller.scrollBy({ left: amount, behavior: 'smooth' });
-    }
-
-    document.getElementById('scrollLeft').addEventListener('click', () => scrollScroller(-220));
-    document.getElementById('scrollRight').addEventListener('click', () => scrollScroller(220));
 
     window.onload = () => {
       loadCaroManuText();
