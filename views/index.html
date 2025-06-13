@@ -101,6 +101,16 @@
     font-style: italic;
     color: green;
   }
+  #caroManuBox {
+    margin: 20px auto;
+    padding: 15px;
+    border: 2px solid #4CAF50;
+    border-radius: 8px;
+    width: 300px;
+    font-size: 20px;
+    font-weight: bold;
+    color: #4CAF50;
+  }
 </style>
 </head>
 <body>
@@ -112,6 +122,8 @@
     <a href="/gallery">View Gallery (login required)</a> | 
     <a href="/backoffice">Back Office (login required)</a>
   </p>
+
+  <div id="caroManuBox"></div>
 
   <h2>Public Photo Gallery</h2>
 
@@ -130,6 +142,20 @@
   </div>
 
   <script>
+    async function loadCaroManuText() {
+      try {
+        const response = await fetch('/api/env?key=CARO_MANU_TEXT');
+        if (!response.ok) {
+          throw new Error('Failed to fetch text');
+        }
+        const data = await response.json();
+        const box = document.getElementById('caroManuBox');
+        box.textContent = data.value || 'Le site de Caro & Manu';
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
     async function loadPhotos() {
       try {
         const response = await fetch('/api/photos');
@@ -209,7 +235,10 @@
     document.getElementById('scrollLeft').addEventListener('click', () => scrollScroller(-220));
     document.getElementById('scrollRight').addEventListener('click', () => scrollScroller(220));
 
-    window.onload = loadPhotos;
+    window.onload = () => {
+      loadCaroManuText();
+      loadPhotos();
+    };
   </script>
 </body>
 </html>
