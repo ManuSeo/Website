@@ -11,7 +11,10 @@ app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies (fo
 app.use(session({
   secret: 'your_secret_key_here',
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 24 * 60 * 60 * 1000 // 1 day
+  }
 }));
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
@@ -28,11 +31,11 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage: storage,
   fileFilter: (req, file, cb) => {
-    // Accept JPEG only
-    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/jpg') {
+    // Accept JPEG and PNG only
+    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/jpg' || file.mimetype === 'image/png') {
       cb(null, true);
     } else {
-      cb(new Error('Only JPEG images are allowed'));
+      cb(new Error('Only JPEG and PNG images are allowed'));
     }
   },
   limits: {
@@ -117,18 +120,20 @@ app.get('/api/photos', (req, res) => {
   });
 });
 
-// New photo upload route
-app.post('/upload-photo', requireLogin, upload.single('photo'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).send('No file uploaded or invalid file type. Only JPEG images are allowed.');
+// New photo upload route accepting multiple files
+app.post('/upload-photo', requireLogin, upload.array('photos'), (req, res) => {
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).send('No files uploaded or invalid file types. Only JPEG and PNG images are allowed.');
   }
-  // Add file info to photos.json
-  const photoEntry = {
-    filename: req.file.originalname,
-    url: `/uploads/${req.file.filename}`
-  };
-
   const photosPath = path.join(__dirname, 'data/photos.json');
+
+  // Prepare new entries
+  const newPhotoEntries = req.files.map(file => ({
+    filename: file.originalname,
+    url: `/uploads/${file.filename}`
+  }));
+
+  // Read old photo list and append new entries
   fs.readFile(photosPath, 'utf8', (err, data) => {
     if (err) {
       return res.status(500).send('Error saving photo data');
@@ -139,7 +144,7 @@ app.post('/upload-photo', requireLogin, upload.single('photo'), (req, res) => {
     } catch (e) {
       photosObj = { photos: [] };
     }
-    photosObj.photos.push(photoEntry);
+    photosObj.photos.push(...newPhotoEntries);
     fs.writeFile(photosPath, JSON.stringify(photosObj, null, 2), 'utf8', (err) => {
       if (err) {
         return res.status(500).send('Error saving photo data');
@@ -173,16 +178,13 @@ app.post('/remove-photo', requireLogin, (req, res) => {
       return res.status(404).send('Photo not found');
     }
 
-    // Remove photo from array
     photosObj.photos.splice(photoIndex, 1);
 
-    // Delete photo file
     const photoFilePath = path.join(__dirname, 'public/uploads', filename);
     fs.unlink(photoFilePath, (unlinkErr) => {
       if (unlinkErr) {
         console.error('Error deleting file:', unlinkErr);
       }
-      // Write updated photo list
       fs.writeFile(photosPath, JSON.stringify(photosObj, null, 2), 'utf8', (writeErr) => {
         if (writeErr) {
           return res.status(500).send('Error saving photo data');
