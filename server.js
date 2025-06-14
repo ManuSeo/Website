@@ -3,11 +3,13 @@ const path = require('path');
 const fs = require('fs');
 const session = require('express-session');
 const multer = require('multer');
+const bcrypt = require('bcrypt');
 
 const app = express();
 
 // Middleware
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies (form data)
+app.use(express.json()); // Parse JSON bodies
 app.use(session({
   secret: 'your_secret_key_here',
   resave: false,
@@ -51,6 +53,16 @@ function requireLogin(req, res, next) {
   }
 }
 
+// Check if logged-in user is admin
+function requireAdmin(req, res, next) {
+  const adminEmail = 'seowmo@gmail.com';
+  if (req.session && req.session.userEmail === adminEmail) {
+    next();
+  } else {
+    res.status(403).send('Access denied');
+  }
+}
+
 // Routes
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'index.html'));
@@ -61,16 +73,24 @@ app.get('/login', (req, res) => {
 });
 
 app.post('/login', (req, res) => {
-  const email = req.body.email;
-  if (!email) {
+  const { email, password } = req.body;
+  if (!email || !password) {
     return res.redirect('/login');
   }
-  fs.readFile(path.join(__dirname, 'data/users.json'), 'utf8', (err, data) => {
-    if (err) {
-      return res.status(500).send('Server error');
-    }
+
+  fs.readFile(path.join(__dirname, 'data/users.json'), 'utf8', async (err, data) => {
+    if (err) return res.status(500).send('Server error');
+
     const users = JSON.parse(data);
-    if (users.emails && users.emails.includes(email)) {
+    const user = users.users.find(u => u.email === email);
+
+    if (!user) {
+      return res.redirect('/login');
+    }
+
+    const match = await bcrypt.compare(password, user.password);
+
+    if (match) {
       req.session.userEmail = email;
       res.redirect('/gallery');
     } else {
@@ -94,12 +114,10 @@ app.get('/backoffice', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'backoffice.html'));
 });
 
-// New photos page
 app.get('/photos', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'photos.html'));
 });
 
-// Slideshow pages
 app.get('/slideshow', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'slideshow.html'));
 });
@@ -112,17 +130,13 @@ app.get('/slideshow2', requireLogin, (req, res) => {
 app.get('/api/photos', requireLogin, (req, res) => {
   const photosPath = path.join(__dirname, 'data/photos.json');
   fs.readFile(photosPath, 'utf8', (err, data) => {
-    if (err) {
-      res.status(500).json({ error: 'Failed to read photos data' });
-      return;
-    }
+    if (err) return res.status(500).json({ error: 'Failed to read photos data' });
     let photosObj = { photos: [] };
     try {
       photosObj = JSON.parse(data);
-    } catch (e) {
+    } catch {
       photosObj = { photos: [] };
     }
-    // Update photo URLs to point to protected /images/ route
     photosObj.photos = photosObj.photos.map(photo => ({
       filename: photo.filename,
       url: `/images/${photo.filename}`
@@ -131,95 +145,113 @@ app.get('/api/photos', requireLogin, (req, res) => {
   });
 });
 
-// New photo upload route accepting multiple files
-app.post('/upload-photo', requireLogin, upload.array('photos'), (req, res) => {
+// Upload photo - only admin
+app.post('/upload-photo', requireAdmin, upload.array('photos'), (req, res) => {
   if (!req.files || req.files.length === 0) {
     return res.status(400).send('No files uploaded or invalid file types. Only JPEG and PNG images are allowed.');
   }
   const photosPath = path.join(__dirname, 'data/photos.json');
 
-  // Prepare new entries
   const newPhotoEntries = req.files.map(file => ({
     filename: file.originalname,
     url: `/images/${file.filename}`
   }));
 
-  // Read old photo list and append new entries
   fs.readFile(photosPath, 'utf8', (err, data) => {
-    if (err) {
-      return res.status(500).send('Error saving photo data');
-    }
+    if (err) return res.status(500).send('Error saving photo data');
+
     let photosObj = { photos: [] };
     try {
       photosObj = JSON.parse(data);
-    } catch (e) {
+    } catch {
       photosObj = { photos: [] };
     }
+
     photosObj.photos.push(...newPhotoEntries);
+
     fs.writeFile(photosPath, JSON.stringify(photosObj, null, 2), 'utf8', (err) => {
-      if (err) {
-        return res.status(500).send('Error saving photo data');
-      }
+      if (err) return res.status(500).send('Error saving photo data');
       res.redirect('/backoffice');
     });
   });
 });
 
-// New photo removal route
+// Remove photo
 app.post('/remove-photo', requireLogin, (req, res) => {
   const filename = req.body.filename;
-  if (!filename) {
-    return res.status(400).send('No filename provided');
-  }
+  if (!filename) return res.status(400).send('No filename provided');
 
   const photosPath = path.join(__dirname, 'data/photos.json');
   fs.readFile(photosPath, 'utf8', (err, data) => {
-    if (err) {
-      return res.status(500).send('Error reading photo data');
-    }
+    if (err) return res.status(500).send('Error reading photo data');
+
     let photosObj = { photos: [] };
     try {
       photosObj = JSON.parse(data);
-    } catch (e) {
+    } catch {
       photosObj = { photos: [] };
     }
 
     const photoIndex = photosObj.photos.findIndex(p => p.filename === filename);
-    if (photoIndex === -1) {
-      return res.status(404).send('Photo not found');
-    }
+    if (photoIndex === -1) return res.status(404).send('Photo not found');
 
     photosObj.photos.splice(photoIndex, 1);
 
     const photoFilePath = path.join(__dirname, 'public/uploads', filename);
     fs.unlink(photoFilePath, (unlinkErr) => {
-      if (unlinkErr) {
-        console.error('Error deleting file:', unlinkErr);
-      }
+      if (unlinkErr) console.error('Error deleting file:', unlinkErr);
+
       fs.writeFile(photosPath, JSON.stringify(photosObj, null, 2), 'utf8', (writeErr) => {
-        if (writeErr) {
-          return res.status(500).send('Error saving photo data');
-        }
+        if (writeErr) return res.status(500).send('Error saving photo data');
         res.redirect('/backoffice');
       });
     });
   });
 });
 
-// Protected image serving route
+// Protected image serving
 app.get('/images/:filename', requireLogin, (req, res) => {
   const filename = req.params.filename;
-  const options = {
-    root: path.join(__dirname, 'public/uploads')
-  };
+  const options = { root: path.join(__dirname, 'public/uploads') };
   res.sendFile(filename, options, (err) => {
-    if (err) {
-      res.status(404).send('Image not found');
+    if (err) res.status(404).send('Image not found');
+  });
+});
+
+// Change password endpoint
+app.post('/change-password', requireAdmin, (req, res) => {
+  const newPassword = req.body.password;
+  if (!newPassword) return res.status(400).send('Password required');
+
+  const usersPath = path.join(__dirname, 'data/users.json');
+  fs.readFile(usersPath, 'utf8', async (err, data) => {
+    if (err) return res.status(500).send('Error reading users data');
+
+    let usersObj = { users: [] };
+    try {
+      usersObj = JSON.parse(data);
+    } catch {
+      usersObj = { users: [] };
+    }
+
+    const userIndex = usersObj.users.findIndex(u => u.email === 'seowmo@gmail.com');
+    if (userIndex === -1) return res.status(404).send('User not found');
+
+    try {
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      usersObj.users[userIndex].password = hashedPassword;
+
+      fs.writeFile(usersPath, JSON.stringify(usersObj, null, 2), 'utf8', (writeErr) => {
+        if (writeErr) return res.status(500).send('Error saving new password');
+        res.status(200).send('Password changed');
+      });
+    } catch (e) {
+      res.status(500).send('Error hashing password');
     }
   });
 });
 
-// Server listens on port 3000
+// Server listen
 const PORT = 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
