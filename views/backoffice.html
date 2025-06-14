@@ -22,7 +22,7 @@
     form {
       margin-bottom: 15px;
     }
-    input[type="file"], input[type="email"], select, textarea {
+    input[type="file"], input[type="email"], input[type="password"], select, textarea {
       padding: 8px;
       margin-right: 10px;
       border-radius: 4px;
@@ -94,7 +94,7 @@
 <body>
   <h1>Back Office</h1>
   <p><a href="/gallery">View Gallery</a> | <a href="/logout">Logout</a></p>
-  
+
   <h2>Edit Front Page Text</h2>
   <textarea id="caroManuTextEditor" placeholder="Enter front page text here..."></textarea><br />
   <button id="caroManuSaveBtn">Save Text</button>
@@ -114,6 +114,13 @@
     <button type="submit">Remove</button>
   </form>
 
+  <h2>Change Password</h2>
+  <form id="changePasswordForm">
+    <input type="password" id="newPassword" placeholder="Enter new password" required>
+    <button type="submit">Change Password</button>
+    <div id="changePasswordStatus"></div>
+  </form>
+
   <h2>Copy & Paste Image Upload</h2>
   <p>Paste an image from your clipboard below and click Upload.</p>
   <textarea id="paste-area" placeholder="Paste image here"></textarea><br />
@@ -126,7 +133,7 @@
     <input type="email" name="email" placeholder="Email" required>
     <button type="submit">Add</button>
   </form>
-  
+
   <h3>Remove User</h3>
   <form action="/remove-user" method="post">
     <input type="email" name="email" placeholder="Email" required>
@@ -266,6 +273,73 @@
         console.error(err);
       }
     });
+
+    // Change password
+    document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const newPassword = document.getElementById('newPassword').value.trim();
+      const statusDiv = document.getElementById('changePasswordStatus');
+      statusDiv.textContent = 'Changing password...';
+      try {
+        const response = await fetch('/change-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: newPassword })
+        });
+        if (!response.ok) {
+          throw new Error('Failed to change password');
+        }
+        statusDiv.style.color = 'green';
+        statusDiv.textContent = 'Password changed successfully!';
+        document.getElementById('newPassword').value = '';
+      } catch (err) {
+        statusDiv.style.color = 'red';
+        statusDiv.textContent = 'Failed to change password.';
+        console.error(err);
+      }
+    });
+
+    // Load initial data
+    window.onload = () => {
+      loadCaroManuText();
+      fetch('/api/users')
+        .then(response => response.json())
+        .then(data => {
+          const listDiv = document.getElementById('user-list');
+          if (data.emails.length === 0) {
+            listDiv.textContent = 'No authorized users yet.';
+          } else {
+            const ul = document.createElement('ul');
+            data.emails.forEach(email => {
+              const li = document.createElement('li');
+              li.textContent = email;
+              ul.appendChild(li);
+            });
+            listDiv.appendChild(ul);
+          }
+        });
+
+      fetch('/api/photos')
+        .then(response => response.json())
+        .then(data => {
+          const select = document.getElementById('photo-select');
+          if (data.photos.length === 0) {
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'No photos available';
+            select.appendChild(option);
+            select.disabled = true;
+          } else {
+            data.photos.forEach(photo => {
+              const option = document.createElement('option');
+              option.value = photo.filename;
+              option.textContent = photo.filename;
+              select.appendChild(option);
+            });
+            select.disabled = false;
+          }
+        });
+    };
   </script>
 </body>
 </html>
