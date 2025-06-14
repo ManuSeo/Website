@@ -70,6 +70,20 @@
     .thumbnail.active {
       border-color: #4CAF50;
     }
+    #downloadBtn {
+      background-color: #0073e6;
+      margin-top: 15px;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: none;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    #downloadBtn:hover {
+      background-color: #005bb5;
+    }
   </style>
 </head>
 <body>
@@ -77,6 +91,9 @@
   <div class="slideshow-container">
     <img id="mainSlide" src="" alt="Photo" />
     <div class="caption" id="caption"></div>
+    <div>
+      <button id="downloadBtn">Download</button>
+    </div>
     <div class="nav-buttons">
       <button id="prevBtn">Previous</button>
       <button id="nextBtn">Next</button>
@@ -95,6 +112,7 @@
     const caption = document.getElementById('caption');
     const prevBtn = document.getElementById('prevBtn');
     const nextBtn = document.getElementById('nextBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
     const thumbnailContainer = document.getElementById('thumbnailContainer');
 
     async function loadPhotos() {
@@ -108,6 +126,7 @@
           mainSlide.style.display = 'none';
           prevBtn.disabled = true;
           nextBtn.disabled = true;
+          downloadBtn.disabled = true;
           return;
         }
         generateThumbnails();
@@ -127,6 +146,7 @@
       mainSlide.alt = photos[currentIndex].filename;
       caption.textContent = photos[currentIndex].filename;
       updateActiveThumbnail();
+      updateDownloadLink();
     }
 
     function generateThumbnails() {
@@ -157,6 +177,17 @@
       });
     }
 
+    function updateDownloadLink() {
+      const photo = photos[currentIndex];
+      if (photo) {
+        downloadBtn.href = photo.url;
+        downloadBtn.download = photo.filename;
+        downloadBtn.disabled = false;
+      } else {
+        downloadBtn.disabled = true;
+      }
+    }
+
     prevBtn.addEventListener('click', () => {
       stopAutoplay();
       showSlide(currentIndex - 1);
@@ -167,6 +198,18 @@
       stopAutoplay();
       showSlide(currentIndex + 1);
       startAutoplay();
+    });
+
+    downloadBtn.addEventListener('click', () => {
+      const photo = photos[currentIndex];
+      if (photo) {
+        const link = document.createElement('a');
+        link.href = photo.url;
+        link.download = photo.filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
     });
 
     function startAutoplay() {
