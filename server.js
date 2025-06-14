@@ -3,7 +3,6 @@ const path = require('path');
 const fs = require('fs');
 const session = require('express-session');
 const multer = require('multer');
-const bcrypt = require('bcrypt');
 
 const app = express();
 
@@ -73,24 +72,18 @@ app.get('/login', (req, res) => {
 });
 
 app.post('/login', (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
+  const { email } = req.body;
+  if (!email) {
     return res.redirect('/login');
   }
 
-  fs.readFile(path.join(__dirname, 'data/users.json'), 'utf8', async (err, data) => {
+  fs.readFile(path.join(__dirname, 'data/users.json'), 'utf8', (err, data) => {
     if (err) return res.status(500).send('Server error');
 
     const users = JSON.parse(data);
     const user = users.users.find(u => u.email === email);
 
-    if (!user) {
-      return res.redirect('/login');
-    }
-
-    const match = await bcrypt.compare(password, user.password);
-
-    if (match) {
+    if (user) {
       req.session.userEmail = email;
       res.redirect('/gallery');
     } else {
@@ -215,39 +208,6 @@ app.get('/images/:filename', requireLogin, (req, res) => {
   const options = { root: path.join(__dirname, 'public/uploads') };
   res.sendFile(filename, options, (err) => {
     if (err) res.status(404).send('Image not found');
-  });
-});
-
-// Change password endpoint
-app.post('/change-password', requireAdmin, (req, res) => {
-  const newPassword = req.body.password;
-  if (!newPassword) return res.status(400).send('Password required');
-
-  const usersPath = path.join(__dirname, 'data/users.json');
-  fs.readFile(usersPath, 'utf8', async (err, data) => {
-    if (err) return res.status(500).send('Error reading users data');
-
-    let usersObj = { users: [] };
-    try {
-      usersObj = JSON.parse(data);
-    } catch {
-      usersObj = { users: [] };
-    }
-
-    const userIndex = usersObj.users.findIndex(u => u.email === 'seowmo@gmail.com');
-    if (userIndex === -1) return res.status(404).send('User not found');
-
-    try {
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-      usersObj.users[userIndex].password = hashedPassword;
-
-      fs.writeFile(usersPath, JSON.stringify(usersObj, null, 2), 'utf8', (writeErr) => {
-        if (writeErr) return res.status(500).send('Error saving new password');
-        res.status(200).send('Password changed');
-      });
-    } catch (e) {
-      res.status(500).send('Error hashing password');
-    }
   });
 });
 
