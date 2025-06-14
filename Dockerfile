@@ -8,7 +8,7 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install express express-session multer
+RUN npm install express express-session multer bcrypt
 
 # Copy the rest of the app files
 COPY . .
