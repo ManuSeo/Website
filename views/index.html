@@ -181,16 +181,18 @@
         formData.append('photos', file);
       }
       try {
-        const response = await fetch('/api/upload', {
+        const response = await fetch('/upload-photo', {
           method: 'POST',
           body: formData
         });
         if (!response.ok) {
           throw new Error('Upload failed');
         }
+        statusDiv.style.color = 'green';
         statusDiv.textContent = 'Upload successful!';
         loadPhotos();
       } catch (err) {
+        statusDiv.style.color = 'red';
         statusDiv.textContent = 'Upload failed. Try again.';
         console.error(err);
       }
