@@ -16,7 +16,6 @@ app.use(session({
     maxAge: 24 * 60 * 60 * 1000 // 1 day
   }
 }));
-app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 // Multer setup for file uploads
 const storage = multer.diskStorage({
@@ -110,13 +109,25 @@ app.get('/slideshow2', requireLogin, (req, res) => {
 });
 
 // API
-app.get('/api/photos', (req, res) => {
-  fs.readFile(path.join(__dirname, 'data/photos.json'), 'utf8', (err, data) => {
+app.get('/api/photos', requireLogin, (req, res) => {
+  const photosPath = path.join(__dirname, 'data/photos.json');
+  fs.readFile(photosPath, 'utf8', (err, data) => {
     if (err) {
       res.status(500).json({ error: 'Failed to read photos data' });
       return;
     }
-    res.json(JSON.parse(data));
+    let photosObj = { photos: [] };
+    try {
+      photosObj = JSON.parse(data);
+    } catch (e) {
+      photosObj = { photos: [] };
+    }
+    // Update photo URLs to point to protected /images/ route
+    photosObj.photos = photosObj.photos.map(photo => ({
+      filename: photo.filename,
+      url: `/images/${photo.filename}`
+    }));
+    res.json(photosObj);
   });
 });
 
@@ -130,7 +141,7 @@ app.post('/upload-photo', requireLogin, upload.array('photos'), (req, res) => {
   // Prepare new entries
   const newPhotoEntries = req.files.map(file => ({
     filename: file.originalname,
-    url: `/uploads/${file.filename}`
+    url: `/images/${file.filename}`
   }));
 
   // Read old photo list and append new entries
@@ -192,6 +203,19 @@ app.post('/remove-photo', requireLogin, (req, res) => {
         res.redirect('/backoffice');
       });
     });
+  });
+});
+
+// Protected image serving route
+app.get('/images/:filename', requireLogin, (req, res) => {
+  const filename = req.params.filename;
+  const options = {
+    root: path.join(__dirname, 'public/uploads')
+  };
+  res.sendFile(filename, options, (err) => {
+    if (err) {
+      res.status(404).send('Image not found');
+    }
   });
 });
 
