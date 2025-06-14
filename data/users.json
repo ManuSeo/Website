@@ -1,5 +1,8 @@
 {
-  "emails": [
-    "seowmo@gmail.com"
+  "users": [
+    {
+      "email": "seowmo@gmail.com",
+      "password": "$2b$10$YTwWlLPPfFQEjHZ5PoRK2OiVSZXaNCGlJC5VhX67N/EY9NEWaZ/i2" 
+    }
   ]
 }
