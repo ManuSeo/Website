@@ -84,10 +84,24 @@
     #downloadBtn:hover {
       background-color: #005bb5;
     }
+    #sortButtons {
+      margin-bottom: 15px;
+    }
+    #sortButtons button {
+      background-color: #0073e6;
+      margin: 0 5px;
+    }
+    #sortButtons button.active {
+      background-color: #005bb5;
+    }
   </style>
 </head>
 <body>
   <h1>Photos pour vous</h1>
+  <div id="sortButtons">
+    <button id="btnOldest" class="active">Older</button>
+    <button id="btnNewest">Newer</button>
+  </div>
   <div class="slideshow-container">
     <img id="mainSlide" src="" alt="Photo" />
     <div class="caption" id="caption"></div>
@@ -107,6 +121,7 @@
     let photos = [];
     let currentIndex = 0;
     let autoplayInterval = null;
+    let sortedAscending = true; // true for oldest (default), false for newest
 
     const mainSlide = document.getElementById('mainSlide');
     const caption = document.getElementById('caption');
@@ -114,6 +129,8 @@
     const nextBtn = document.getElementById('nextBtn');
     const downloadBtn = document.getElementById('downloadBtn');
     const thumbnailContainer = document.getElementById('thumbnailContainer');
+    const btnOldest = document.getElementById('btnOldest');
+    const btnNewest = document.getElementById('btnNewest');
 
     async function loadPhotos() {
       try {
@@ -129,6 +146,7 @@
           downloadBtn.disabled = true;
           return;
         }
+        sortPhotos();
         generateThumbnails();
         showSlide(currentIndex);
         startAutoplay();
@@ -136,6 +154,15 @@
         caption.textContent = 'Error loading photos.';
         console.error(error);
       }
+    }
+
+    function sortPhotos() {
+      if (sortedAscending) {
+        photos.sort((a, b) => a.filename.localeCompare(b.filename));
+      } else {
+        photos.sort((a, b) => b.filename.localeCompare(a.filename));
+      }
+      currentIndex = 0;
     }
 
     function showSlide(index) {
@@ -209,6 +236,28 @@
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+      }
+    });
+
+    btnOldest.addEventListener('click', () => {
+      if (!sortedAscending) {
+        sortedAscending = true;
+        btnOldest.classList.add('active');
+        btnNewest.classList.remove('active');
+        sortPhotos();
+        generateThumbnails();
+        showSlide(0);
+      }
+    });
+
+    btnNewest.addEventListener('click', () => {
+      if (sortedAscending) {
+        sortedAscending = false;
+        btnNewest.classList.add('active');
+        btnOldest.classList.remove('active');
+        sortPhotos();
+        generateThumbnails();
+        showSlide(0);
       }
     });
 
