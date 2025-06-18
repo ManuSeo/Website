@@ -5,7 +5,7 @@
   <title>Back Office</title>
   <style>
     body {
-      background-color: #87CEEB;
+      background-color: #fffacd; /* Pale yellow background */
       font-family: Arial, sans-serif;
       padding: 20px;
     }
@@ -13,7 +13,7 @@
       color: #333;
     }
     a {
-      color: #007bff;
+      color: #ffeb8a; /* Pale yellow link */
       text-decoration: none;
     }
     a:hover {
@@ -31,15 +31,15 @@
       font-size: 14px;
     }
     button {
-      background-color: #4CAF50;
+      background-color: #f9f4b2; /* Pale yellow button */
       border: none;
-      color: white;
+      color: #333;
       padding: 8px 15px;
       border-radius: 5px;
       cursor: pointer;
     }
     button:hover {
-      background-color: #45a049;
+      background-color: #e6e1a1;
     }
     #user-list ul, #photo-list ul {
       list-style-type: none;
@@ -77,13 +77,13 @@
       padding: 8px 16px;
       font-size: 16px;
       cursor: pointer;
-      background-color: #4CAF50;
-      color: white;
+      background-color: #f9f4b2;
+      color: #333;
       border: none;
       border-radius: 5px;
     }
     #caroManuSaveBtn:hover {
-      background-color: #45a049;
+      background-color: #e6e1a1;
     }
     #caroManuSaveStatus {
       margin-top: 8px;
@@ -219,127 +219,6 @@
           select.disabled = false;
         }
       });
-
-    // Paste and upload image
-    document.getElementById('paste-upload-btn').addEventListener('click', async () => {
-      const statusDiv = document.getElementById('paste-upload-status');
-      const pasteArea = document.getElementById('paste-area');
-      statusDiv.textContent = '';
-
-      const clipboardItems = await navigator.clipboard.read();
-      let imageBlob = null;
-      for (const item of clipboardItems) {
-        if (item.types.includes('image/png')) {
-          imageBlob = await item.getType('image/png');
-          break;
-        } else if (item.types.includes('image/jpeg')) {
-          imageBlob = await item.getType('image/jpeg');
-          break;
-        }
-      }
-
-      if (!imageBlob) {
-        statusDiv.textContent = 'No image found in clipboard. Please copy an image and try again.';
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append('photos', imageBlob, 'pasted-image.png');
-
-      try {
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData
-        });
-        if (!response.ok) {
-          throw new Error('Upload failed');
-        }
-        statusDiv.style.color = 'green';
-        statusDiv.textContent = 'Upload successful!';
-        pasteArea.value = '';
-        const select = document.getElementById('photo-select');
-        select.innerHTML = '<option value="">Select a photo to remove</option>';
-        const photosResponse = await fetch('/api/photos');
-        const photosData = await photosResponse.json();
-        photosData.photos.forEach(photo => {
-          const option = document.createElement('option');
-          option.value = photo.filename;
-          option.textContent = photo.filename;
-          select.appendChild(option);
-        });
-      } catch (err) {
-        statusDiv.style.color = 'red';
-        statusDiv.textContent = 'Upload failed. Try again.';
-        console.error(err);
-      }
-    });
-
-    // Change password
-    document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const newPassword = document.getElementById('newPassword').value.trim();
-      const statusDiv = document.getElementById('changePasswordStatus');
-      statusDiv.textContent = 'Changing password...';
-      try {
-        const response = await fetch('/change-password', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ password: newPassword })
-        });
-        if (!response.ok) {
-          throw new Error('Failed to change password');
-        }
-        statusDiv.style.color = 'green';
-        statusDiv.textContent = 'Password changed successfully!';
-        document.getElementById('newPassword').value = '';
-      } catch (err) {
-        statusDiv.style.color = 'red';
-        statusDiv.textContent = 'Failed to change password.';
-        console.error(err);
-      }
-    });
-
-    // Load initial data
-    window.onload = () => {
-      loadCaroManuText();
-      fetch('/api/users')
-        .then(response => response.json())
-        .then(data => {
-          const listDiv = document.getElementById('user-list');
-          if (data.emails.length === 0) {
-            listDiv.textContent = 'No authorized users yet.';
-          } else {
-            const ul = document.createElement('ul');
-            data.emails.forEach(email => {
-              const li = document.createElement('li');
-              li.textContent = email;
-              ul.appendChild(li);
-            });
-            listDiv.appendChild(ul);
-          }
-        });
-
-      fetch('/api/photos')
-        .then(response => response.json())
-        .then(data => {
-          const select = document.getElementById('photo-select');
-          if (data.photos.length === 0) {
-            const option = document.createElement('option');
-            option.value = '';
-            option.textContent = 'No photos available';
-            select.appendChild(option);
-            select.disabled = true;
-          } else {
-            data.photos.forEach(photo => {
-              const option = document.createElement('option');
-              option.value = photo.filename;
-              option.textContent = photo.filename;
-              select.appendChild(option);
-            });
-            select.disabled = false;
-          }
-        });
-    };
   </script>
 </body>
 </html>
