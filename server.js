@@ -7,8 +7,8 @@ const multer = require('multer');
 const app = express();
 
 // Middleware
-app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies (form data)
-app.use(express.json()); // Parse JSON bodies
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 app.use(session({
   secret: 'your_secret_key_here',
   resave: false,
@@ -24,23 +24,19 @@ const storage = multer.diskStorage({
     cb(null, path.join(__dirname, 'public/uploads'));
   },
   filename: (req, file, cb) => {
-    // Keep original filename
     cb(null, file.originalname);
   }
 });
 const upload = multer({
   storage: storage,
   fileFilter: (req, file, cb) => {
-    // Accept JPEG and PNG only
     if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/jpg' || file.mimetype === 'image/png') {
       cb(null, true);
     } else {
       cb(new Error('Only JPEG and PNG images are allowed'));
     }
   },
-  limits: {
-    fileSize: 5 * 1024 * 1024 // Limit 5MB
-  }
+  limits: { fileSize: 5 * 1024 * 1024 }
 });
 
 // Authentication middleware
@@ -115,9 +111,7 @@ app.get('/slideshow', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'slideshow.html'));
 });
 
-app.get('/slideshow2', requireLogin, (req, res) => {
-  res.sendFile(path.join(__dirname, 'views', 'slideshow2.html'));
-});
+// Removed /slideshow2 route as the page was deleted
 
 // API
 app.get('/api/photos', requireLogin, (req, res) => {
@@ -132,8 +126,11 @@ app.get('/api/photos', requireLogin, (req, res) => {
     }
     photosObj.photos = photosObj.photos.map(photo => ({
       filename: photo.filename,
-      url: `/images/${photo.filename}`
+      url: `/images/${photo.filename}`,
+      timestamp: photo.timestamp || 0
     }));
+    // Sort photos by timestamp ascending to show oldest first
+    photosObj.photos.sort((a, b) => a.timestamp - b.timestamp);
     res.json(photosObj);
   });
 });
@@ -147,7 +144,8 @@ app.post('/upload-photo', requireAdmin, upload.array('photos'), (req, res) => {
 
   const newPhotoEntries = req.files.map(file => ({
     filename: file.originalname,
-    url: `/images/${file.filename}`
+    url: `/images/${file.filename}`,
+    timestamp: Date.now()
   }));
 
   fs.readFile(photosPath, 'utf8', (err, data) => {
