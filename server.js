@@ -13,30 +13,36 @@ app.use(session({
   secret: 'your_secret_key_here',
   resave: false,
   saveUninitialized: false,
-  cookie: {
-    maxAge: 24 * 60 * 60 * 1000 // 1 day
-  }
+  cookie: { maxAge: 24 * 60 * 60 * 1000 } // 1 day
 }));
 
 // Multer setup for file uploads
+const uploadDir = path.join(__dirname, 'public/uploads');
+// Ensure the upload directory exists
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, 'public/uploads'));
+    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
     cb(null, file.originalname);
   }
 });
+
 const upload = multer({
   storage: storage,
   fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/jpg' || file.mimetype === 'image/png') {
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
       cb(new Error('Only JPEG and PNG images are allowed'));
     }
   },
-  limits: { fileSize: 5 * 1024 * 1024 }
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB
 });
 
 // Authentication middleware
@@ -72,13 +78,10 @@ app.post('/login', (req, res) => {
   if (!email) {
     return res.redirect('/login');
   }
-
   fs.readFile(path.join(__dirname, 'data/users.json'), 'utf8', (err, data) => {
     if (err) return res.status(500).send('Server error');
-
     const users = JSON.parse(data);
     const user = users.users.find(u => u.email === email);
-
     if (user) {
       req.session.userEmail = email;
       res.redirect('/gallery');
@@ -111,8 +114,6 @@ app.get('/slideshow', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'slideshow.html'));
 });
 
-// Removed /slideshow2 route as the page was deleted
-
 // API
 app.get('/api/photos', requireLogin, (req, res) => {
   const photosPath = path.join(__dirname, 'data/photos.json');
@@ -129,40 +130,52 @@ app.get('/api/photos', requireLogin, (req, res) => {
       url: `/images/${photo.filename}`,
       timestamp: photo.timestamp || 0
     }));
-    // Sort photos by timestamp ascending to show oldest first
     photosObj.photos.sort((a, b) => a.timestamp - b.timestamp);
     res.json(photosObj);
   });
 });
 
 // Upload photo - only admin
-app.post('/upload-photo', requireAdmin, upload.array('photos'), (req, res) => {
-  if (!req.files || req.files.length === 0) {
-    return res.status(400).send('No files uploaded or invalid file types. Only JPEG and PNG images are allowed.');
-  }
-  const photosPath = path.join(__dirname, 'data/photos.json');
-
-  const newPhotoEntries = req.files.map(file => ({
-    filename: file.originalname,
-    url: `/images/${file.filename}`,
-    timestamp: Date.now()
-  }));
-
-  fs.readFile(photosPath, 'utf8', (err, data) => {
-    if (err) return res.status(500).send('Error saving photo data');
-
-    let photosObj = { photos: [] };
-    try {
-      photosObj = JSON.parse(data);
-    } catch {
-      photosObj = { photos: [] };
+app.post('/upload-photo', requireAdmin, (req, res) => {
+  upload.array('photo')(req, res, function (err) {
+    if (err instanceof multer.MulterError) {
+      console.error('Multer error:', err);
+      return res.status(400).send(`Upload error: ${err.message}`);
+    } else if (err) {
+      console.error('Unknown upload error:', err);
+      return res.status(400).send(`Upload error: ${err.message}`);
     }
 
-    photosObj.photos.push(...newPhotoEntries);
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).send('No files uploaded or invalid file types. Only JPEG and PNG images are allowed.');
+    }
 
-    fs.writeFile(photosPath, JSON.stringify(photosObj, null, 2), 'utf8', (err) => {
-      if (err) return res.status(500).send('Error saving photo data');
-      res.redirect('/backoffice');
+    const photosPath = path.join(__dirname, 'data/photos.json');
+    const newPhotoEntries = req.files.map(file => ({
+      filename: file.originalname,
+      url: `/images/${file.filename}`,
+      timestamp: Date.now()
+    }));
+
+    fs.readFile(photosPath, 'utf8', (err, data) => {
+      let photosObj = { photos: [] };
+      if (!err) {
+        try {
+          photosObj = JSON.parse(data);
+        } catch {
+          photosObj = { photos: [] };
+        }
+      }
+
+      photosObj.photos.push(...newPhotoEntries);
+
+      fs.writeFile(photosPath, JSON.stringify(photosObj, null, 2), 'utf8', (err) => {
+        if (err) {
+          console.error('Error saving photo data:', err);
+          return res.status(500).send('Error saving photo data');
+        }
+        res.redirect('/backoffice');
+      });
     });
   });
 });
@@ -174,13 +187,13 @@ app.post('/remove-photo', requireLogin, (req, res) => {
 
   const photosPath = path.join(__dirname, 'data/photos.json');
   fs.readFile(photosPath, 'utf8', (err, data) => {
-    if (err) return res.status(500).send('Error reading photo data');
-
     let photosObj = { photos: [] };
-    try {
-      photosObj = JSON.parse(data);
-    } catch {
-      photosObj = { photos: [] };
+    if (!err) {
+      try {
+        photosObj = JSON.parse(data);
+      } catch {
+        photosObj = { photos: [] };
+      }
     }
 
     const photoIndex = photosObj.photos.findIndex(p => p.filename === filename);
@@ -209,7 +222,6 @@ app.get('/images/:filename', requireLogin, (req, res) => {
   });
 });
 
-// Server listen
 const PORT = 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
