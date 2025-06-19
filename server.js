@@ -114,8 +114,8 @@ app.get('/slideshow', requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'slideshow.html'));
 });
 
-// API
-app.get('/api/photos', requireLogin, (req, res) => {
+// Public API for photos - no login required
+app.get('/api/photos', (req, res) => {
   const photosPath = path.join(__dirname, 'data/photos.json');
   fs.readFile(photosPath, 'utf8', (err, data) => {
     if (err) return res.status(500).json({ error: 'Failed to read photos data' });
