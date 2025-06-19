@@ -137,7 +137,7 @@ app.get('/api/photos', requireLogin, (req, res) => {
 
 // Upload photo - only admin
 app.post('/upload-photo', requireAdmin, (req, res) => {
-  upload.array('photo')(req, res, function (err) {
+  upload.single('photo')(req, res, function (err) {
     if (err instanceof multer.MulterError) {
       console.error('Multer error:', err);
       return res.status(400).send(`Upload error: ${err.message}`);
@@ -146,17 +146,17 @@ app.post('/upload-photo', requireAdmin, (req, res) => {
       return res.status(400).send(`Upload error: ${err.message}`);
     }
 
-    if (!req.files || req.files.length === 0) {
-      console.error('No files uploaded or invalid file types.');
-      return res.status(400).send('No files uploaded or invalid file types. Only JPEG and PNG images are allowed.');
+    if (!req.file) {
+      console.error('No file uploaded or invalid file type.');
+      return res.status(400).send('No file uploaded or invalid file type. Only JPEG and PNG images are allowed.');
     }
 
     const photosPath = path.join(__dirname, 'data/photos.json');
-    const newPhotoEntries = req.files.map(file => ({
-      filename: file.originalname,
-      url: `/images/${file.filename}`,
+    const newPhotoEntry = {
+      filename: req.file.originalname,
+      url: `/images/${req.file.filename}`,
       timestamp: Date.now()
-    }));
+    };
 
     fs.readFile(photosPath, 'utf8', (err, data) => {
       let photosObj = { photos: [] };
@@ -168,7 +168,7 @@ app.post('/upload-photo', requireAdmin, (req, res) => {
         }
       }
 
-      photosObj.photos.push(...newPhotoEntries);
+      photosObj.photos.push(newPhotoEntry);
 
       fs.writeFile(photosPath, JSON.stringify(photosObj, null, 2), 'utf8', (err) => {
         if (err) {
