@@ -71,29 +71,6 @@
   .download-link:hover {
     background-color: #005bb5;
   }
-  #uploadForm {
-    max-width: 600px;
-    margin: 20px auto;
-    text-align: center;
-  }
-  #uploadInput {
-    margin-right: 10px;
-    padding: 6px;
-    font-size: 14px;
-  }
-  #uploadButton {
-    padding: 7px 15px;
-    font-size: 14px;
-    cursor: pointer;
-    background-color: #0073e6;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    transition: background-color 0.3s ease;
-  }
-  #uploadButton:hover {
-    background-color: #005bb5;
-  }
 </style>
 </head>
 <body>
@@ -102,12 +79,6 @@
   <div id="caroManuBox"></div>
 
   <h2>Public Photo Gallery</h2>
-
-  <form id="uploadForm">
-    <input type="file" id="uploadInput" name="photos" multiple accept="image/*" />
-    <button type="submit" id="uploadButton">Upload Photos</button>
-    <div id="uploadStatus"></div>
-  </form>
 
   <div class="gallery" id="photoScroller">
     <!-- Photos will be dynamically loaded here as grid -->
@@ -172,41 +143,6 @@
         console.error(err);
       }
     }
-
-    async function uploadPhotos(files) {
-      const statusDiv = document.getElementById('uploadStatus');
-      statusDiv.textContent = 'Uploading...';
-      const formData = new FormData();
-      for (const file of files) {
-        formData.append('photos', file);
-      }
-      try {
-        const response = await fetch('/upload-photo', {
-          method: 'POST',
-          body: formData
-        });
-        if (!response.ok) {
-          throw new Error('Upload failed');
-        }
-        statusDiv.style.color = 'green';
-        statusDiv.textContent = 'Upload successful!';
-        loadPhotos();
-      } catch (err) {
-        statusDiv.style.color = 'red';
-        statusDiv.textContent = 'Upload failed. Try again.';
-        console.error(err);
-      }
-    }
-
-    document.getElementById('uploadForm').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const files = document.getElementById('uploadInput').files;
-      if (files.length === 0) {
-        alert('Please select at least one photo to upload.');
-        return;
-      }
-      uploadPhotos(files);
-    });
 
     window.onload = () => {
       loadCaroManuText();
