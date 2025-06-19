@@ -41,8 +41,8 @@ const upload = multer({
     } else {
       cb(new Error('Only JPEG and PNG images are allowed'));
     }
-  },
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB
+  }
+  // Removed fileSize limit
 });
 
 // Authentication middleware
