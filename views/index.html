@@ -58,17 +58,21 @@
     font-size: 14px;
     color: #555;
     text-align: left;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
-  .download-link {
-    display: inline-block;
-    margin-top: 5px;
-    padding: 6px 12px;
+  .download-btn {
     background-color: #0073e6;
     color: white;
+    border: none;
     border-radius: 3px;
+    padding: 6px 12px;
     font-size: 14px;
+    cursor: pointer;
+    text-decoration: none;
   }
-  .download-link:hover {
+  .download-btn:hover {
     background-color: #005bb5;
   }
 </style>
@@ -125,13 +129,13 @@
           details.className = 'photo-details';
           details.textContent = photo.filename;
 
-          const link = document.createElement('a');
-          link.href = photo.url;
-          link.download = photo.filename;
-          link.className = 'download-link';
-          link.textContent = 'Download';
+          const downloadBtn = document.createElement('a');
+          downloadBtn.href = photo.url;
+          downloadBtn.download = photo.filename;
+          downloadBtn.className = 'download-btn';
+          downloadBtn.textContent = 'Download';
 
-          details.appendChild(link);
+          details.appendChild(downloadBtn);
           div.appendChild(img);
           div.appendChild(details);
 
