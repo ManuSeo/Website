@@ -17,7 +17,7 @@ app.use(session({
 }));
 
 // Multer setup for file uploads
-const uploadDir = path.join(__dirname, '/public/uploads');
+const uploadDir = path.join(__dirname, 'public', 'uploads');
 // Ensure the upload directory exists
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -147,6 +147,7 @@ app.post('/upload-photo', requireAdmin, (req, res) => {
     }
 
     if (!req.files || req.files.length === 0) {
+      console.error('No files uploaded or invalid file types.');
       return res.status(400).send('No files uploaded or invalid file types. Only JPEG and PNG images are allowed.');
     }
 
@@ -201,7 +202,7 @@ app.post('/remove-photo', requireLogin, (req, res) => {
 
     photosObj.photos.splice(photoIndex, 1);
 
-    const photoFilePath = path.join(__dirname, '/public/uploads', filename);
+    const photoFilePath = path.join(__dirname, 'public', 'uploads', filename);
     fs.unlink(photoFilePath, (unlinkErr) => {
       if (unlinkErr) console.error('Error deleting file:', unlinkErr);
 
@@ -216,7 +217,7 @@ app.post('/remove-photo', requireLogin, (req, res) => {
 // Protected image serving
 app.get('/images/:filename', requireLogin, (req, res) => {
   const filename = req.params.filename;
-  const options = { root: path.join(__dirname, '/public/uploads') };
+  const options = { root: path.join(__dirname, 'public', 'uploads') };
   res.sendFile(filename, options, (err) => {
     if (err) res.status(404).send('Image not found');
   });
